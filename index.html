@@ -2,69 +2,113 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Color Dot Chat (WebSocket)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Secret Dot Chat</title>
   <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2em; }
-    #colorGrid { display: grid; grid-template-columns: repeat(5, 60px); grid-gap: 10px; margin-bottom: 2em; }
+    #colorGrid { display: grid; grid-template-columns: repeat(3, 60px); grid-gap: 10px; margin-bottom: 1em; }
     .dot { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid #ccc; }
-    #chatWindow { display: flex; flex-wrap: wrap; gap: 10px; max-width: 320px; border-top: 2px solid #ddd; padding-top: 1em; }
-    .chatDot { width: 30px; height: 30px; border-radius: 50%; }
-    #status { margin-bottom: 1em; color: green; }
+    .dot.white { background-color: white; border: 2px solid black; }
+    #chatWindow { display: flex; flex-wrap: wrap; gap: 10px; max-width: 320px; padding-top: 1em; border-top: 1px solid #ccc; }
+    .chatDotWrapper { display: flex; flex-direction: column; align-items: center; }
+    .chatDot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; }
+    .ackLine { height: 2px; width: 30px; background: black; margin-top: 4px; display: none; }
+    #indexToggle { margin-top: 1em; text-decoration: underline; color: blue; cursor: pointer; }
+    #indexBox { display: none; border: 1px solid #aaa; padding: 1em; margin-top: 1em; background: #f9f9f9; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #ddd; padding: 6px; text-align: center; }
+    th { background-color: #eee; }
   </style>
 </head>
 <body>
   <h2>Color Dot Chat</h2>
-  <div id="status">Connecting...</div>
   <div id="colorGrid"></div>
   <h3>Chat Window</h3>
   <div id="chatWindow"></div>
+  <div id="indexToggle">📘 Show Index</div>
+  <div id="indexBox">
+    <h4>Color Meanings</h4>
+    <table>
+      <tr><th>Color</th><th>Message</th></tr>
+      <tr><td style="color:red;">Red</td><td>I Love You</td></tr>
+      <tr><td style="color:green;">Green</td><td>I Miss You</td></tr>
+      <tr><td style="color:orange;">Orange</td><td>Thinking of You</td></tr>
+      <tr><td style="color:blue;">Blue</td><td>Need to Talk</td></tr>
+      <tr><td style="color:yellow;">Yellow</td><td>Smile Please</td></tr>
+      <tr><td style="color:maroon;">Maroon</td><td>Feeling Low</td></tr>
+      <tr><td style="color:pink;">Pink</td><td>Feeling Cute</td></tr>
+      <tr><td style="color:black;">Black</td><td>Need a Hug</td></tr>
+      <tr><td style="color:black; background:white;">White</td><td>Peace</td></tr>
+    </table>
+  </div>
 
   <script>
-    const colors = [
-      'red', 'orange', 'yellow', 'green', 'blue',
-      'indigo', 'violet', 'pink', 'cyan', 'lime',
-      'magenta', 'purple', 'brown', 'gray', 'black',
-      'teal', 'gold', 'silver', 'coral', 'navy',
-      'maroon', 'olive', 'turquoise', 'peachpuff', 'khaki'
-    ];
-
+    const colors = ['red', 'green', 'orange', 'blue', 'yellow', 'maroon', 'pink', 'black', 'white'];
     const grid = document.getElementById('colorGrid');
     const chatWindow = document.getElementById('chatWindow');
-    const status = document.getElementById('status');
-
-    // TODO: Replace below with your deployed Render backend URL
+    const indexToggle = document.getElementById('indexToggle');
+    const indexBox = document.getElementById('indexBox');
     const ws = new WebSocket('wss://color-dot-chat.onrender.com');
 
-
-    ws.onopen = () => {
-      status.textContent = 'Connected ✅';
-    };
-
+    ws.onopen = () => console.log('Connected to WebSocket server ✅');
     ws.onmessage = (event) => {
-      const color = event.data;
-      showDot(color);
+      const { type, color, id } = JSON.parse(event.data);
+      if (type === 'dot') showDot(color, id, false);
+      else if (type === 'ack') showAck(id);
     };
 
-    function showDot(color) {
+    function showDot(color, id, isSender) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'chatDotWrapper';
+      wrapper.id = 'dot-' + id;
+
       const dot = document.createElement('div');
       dot.className = 'chatDot';
       dot.style.backgroundColor = color;
-      chatWindow.appendChild(dot);
+      if (color === 'white') dot.classList.add('white');
+
+      const ackLine = document.createElement('div');
+      ackLine.className = 'ackLine';
+
+      dot.onclick = () => {
+        if (!isSender) {
+          ws.send(JSON.stringify({ type: 'ack', id }));
+          showAck(id);
+        }
+      };
+
+      wrapper.appendChild(dot);
+      wrapper.appendChild(ackLine);
+      chatWindow.appendChild(wrapper);
     }
 
     function sendDot(color) {
-      showDot(color); // show on sender side
-      ws.send(color); // send to receiver
+      const id = 'id-' + Date.now();
+      showDot(color, id, true);
+      ws.send(JSON.stringify({ type: 'dot', color, id }));
+    }
+
+    function showAck(id) {
+      const wrapper = document.getElementById('dot-' + id);
+      if (wrapper) {
+        const ackLine = wrapper.querySelector('.ackLine');
+        if (ackLine) ackLine.style.display = 'block';
+      }
     }
 
     colors.forEach(color => {
       const dot = document.createElement('div');
       dot.className = 'dot';
       dot.style.backgroundColor = color;
+      if (color === 'white') dot.classList.add('white');
       dot.onclick = () => sendDot(color);
       grid.appendChild(dot);
     });
+
+    indexToggle.onclick = () => {
+      indexBox.style.display = indexBox.style.display === 'none' ? 'block' : 'none';
+      indexToggle.textContent = indexBox.style.display === 'block' ? '📕 Hide Index' : '📘 Show Index';
+    };
   </script>
 </body>
 </html>
