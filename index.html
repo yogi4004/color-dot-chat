@@ -34,7 +34,7 @@
     const status = document.getElementById('status');
 
     // TODO: Replace below with your deployed Render backend URL
-    const ws = new WebSocket('wss://YOUR-BACKEND-URL.onrender.com');
+    const ws = new WebSocket('https://color-dot-chat.onrender.com');
 
     ws.onopen = () => {
       status.textContent = 'Connected ✅';
