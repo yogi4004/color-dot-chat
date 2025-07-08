@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Color Dot Chat</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2em; }
+    #colorGrid { display: grid; grid-template-columns: repeat(5, 60px); grid-gap: 10px; margin-bottom: 1em; }
+    .dot { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid #ccc; }
+    #chatWindow { display: flex; flex-wrap: wrap; gap: 10px; max-width: 320px; border-top: 2px solid #ddd; padding-top: 1em; }
+    .chatDotWrapper { position: relative; }
+    .chatDot { width: 30px; height: 30px; border-radius: 50%; }
+    .deleteBtn { position: absolute; top: -8px; right: -8px; background: red; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; }
+    #controls { margin-top: 1em; }
+    #refreshBtn { background: #333; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Color Dot Chat</h2>
+  <div id="status">Connecting...</div>
+  <div id="colorGrid"></div>
+  <h3>Chat Window</h3>
+  <div id="chatWindow"></div>
+  <div id="controls">
+    <button id="refreshBtn">🔄 Refresh</button>
+  </div>
+
+  <script>
+    const colors = [
+      'red', 'orange', 'yellow', 'green', 'blue',
+      'indigo', 'violet', 'pink', 'cyan', 'lime',
+      'magenta', 'purple', 'brown', 'gray', 'black',
+      'teal', 'gold', 'silver', 'coral', 'navy',
+      'maroon', 'olive', 'turquoise', 'peachpuff', 'khaki'
+    ];
+
+    const grid = document.getElementById('colorGrid');
+    const chatWindow = document.getElementById('chatWindow');
+    const status = document.getElementById('status');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    const ws = new WebSocket('wss://color-dot-chat.onrender.com');
+
+    ws.onopen = () => {
+      status.textContent = 'Connected ✅';
+    };
+
+    ws.onmessage = (event) => {
+      const color = event.data;
+      showDot(color);
+    };
+
+    function showDot(color) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'chatDotWrapper';
+
+      const dot = document.createElement('div');
+      dot.className = 'chatDot';
+      dot.style.backgroundColor = color;
+
+      const btn = document.createElement('button');
+      btn.className = 'deleteBtn';
+      btn.textContent = '×';
+      btn.onclick = () => wrapper.remove();
+
+      wrapper.appendChild(dot);
+      wrapper.appendChild(btn);
+      chatWindow.appendChild(wrapper);
+    }
+
+    function sendDot(color) {
+      showDot(color); // show locally
+      ws.send(color); // send to other client
+    }
+
+    colors.forEach(color => {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.style.backgroundColor = color;
+      dot.onclick = () => sendDot(color);
+      grid.appendChild(dot);
+    });
+
+    refreshBtn.onclick = () => {
+      chatWindow.innerHTML = '';
+    };
+  </script>
+</body>
+</html>
