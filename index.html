@@ -52,6 +52,7 @@
 
 
 
+
     ws.onopen = () => console.log('Connected to WebSocket server ✅');
     ws.onmessage = (event) => {
       const { type, color, id } = JSON.parse(event.data);
