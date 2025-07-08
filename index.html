@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color Dot Chat (WebSocket)</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2em; }
+    #colorGrid { display: grid; grid-template-columns: repeat(5, 60px); grid-gap: 10px; margin-bottom: 2em; }
+    .dot { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid #ccc; }
+    #chatWindow { display: flex; flex-wrap: wrap; gap: 10px; max-width: 320px; border-top: 2px solid #ddd; padding-top: 1em; }
+    .chatDot { width: 30px; height: 30px; border-radius: 50%; }
+    #status { margin-bottom: 1em; color: green; }
+  </style>
+</head>
+<body>
+  <h2>Color Dot Chat</h2>
+  <div id="status">Connecting...</div>
+  <div id="colorGrid"></div>
+  <h3>Chat Window</h3>
+  <div id="chatWindow"></div>
+
+  <script>
+    const colors = [
+      'red', 'orange', 'yellow', 'green', 'blue',
+      'indigo', 'violet', 'pink', 'cyan', 'lime',
+      'magenta', 'purple', 'brown', 'gray', 'black',
+      'teal', 'gold', 'silver', 'coral', 'navy',
+      'maroon', 'olive', 'turquoise', 'peachpuff', 'khaki'
+    ];
+
+    const grid = document.getElementById('colorGrid');
+    const chatWindow = document.getElementById('chatWindow');
+    const status = document.getElementById('status');
+
+    // TODO: Replace below with your deployed Render backend URL
+    const ws = new WebSocket('wss://YOUR-BACKEND-URL.onrender.com');
+
+    ws.onopen = () => {
+      status.textContent = 'Connected ✅';
+    };
+
+    ws.onmessage = (event) => {
+      const color = event.data;
+      showDot(color);
+    };
+
+    function showDot(color) {
+      const dot = document.createElement('div');
+      dot.className = 'chatDot';
+      dot.style.backgroundColor = color;
+      chatWindow.appendChild(dot);
+    }
+
+    function sendDot(color) {
+      showDot(color); // show on sender side
+      ws.send(color); // send to receiver
+    }
+
+    colors.forEach(color => {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.style.backgroundColor = color;
+      dot.onclick = () => sendDot(color);
+      grid.appendChild(dot);
+    });
+  </script>
+</body>
+</html>
